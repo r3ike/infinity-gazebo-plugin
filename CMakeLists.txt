@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(my_gazebo_plugin VERSION 1.0.0 LANGUAGES CXX)
+project(infinity_gazebo_plugin VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,17 +10,17 @@ find_package(gz-plugin REQUIRED)
 
 include_directories(include)
 
-add_library(MySystem SHARED
-  src/MySystem.cc
+add_library(InfinityBridge SHARED
+  src/InfinityBridge.cc
 )
 
-target_link_libraries(MySystem
+target_link_libraries(InfinityBridge
   PUBLIC
     gz-sim::gz-sim
     gz-plugin::gz-plugin
 )
 
-set_target_properties(MySystem PROPERTIES
+set_target_properties(InfinityBridge PROPERTIES
   PREFIX "lib"
   SUFFIX ".so"
 )

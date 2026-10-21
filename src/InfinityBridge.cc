@@ -1,4 +1,4 @@
-#include "MySystem.hh"
+#include "InfinityBridge.hh"
 #include <gz/plugin/Register.hh>
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/Pose.hh>

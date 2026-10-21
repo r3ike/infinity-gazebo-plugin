@@ -19,8 +19,8 @@ export GZ_SIM_SYSTEM_PLUGIN_PATH=$(pwd)/build:$GZ_SIM_SYSTEM_PLUGIN_PATH
 Set the plugin in the world SDF file
 ```yaml
 <plugin
-    filename="libMySystem.so"
-    name="my_plugin::MySystem">
+    filename="libInfinityBridge.so"
+    name="infinity_plugin::InfinityBridge">
     <custom_factor>2.5</custom_factor>
 </plugin>
 ```
