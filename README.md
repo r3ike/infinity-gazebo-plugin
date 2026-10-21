@@ -1,4 +1,6 @@
 # infinity-gazebo-plugin
+Questo plugin sviluppato appositamente per infinity-autopilot si occupa di inviare all'autopilot i messaggi mavlink HIL contenenti i dati del simulatore, inoltre riceve i comandi degli attuatori e li applica al simulatore.
+La comunicazione con l'autopilot avviene mediante socket UDP.
 
 ## Build
 
