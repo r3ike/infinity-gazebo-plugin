@@ -21,6 +21,6 @@ Set the plugin in the world SDF file
 <plugin
     filename="libInfinityBridge.so"
     name="infinity_plugin::InfinityBridge">
-    <custom_factor>2.5</custom_factor>
+    <imu_topic>/imu</imu_topic>
 </plugin>
 ```
