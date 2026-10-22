@@ -12,6 +12,10 @@
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/Sensor.hh>
 #include <gz/sim/components/Imu.hh>
+
+#include "mavlink/common/mavlink.h"
+#include "UdpSocket.hh"
+
 #include <memory>
 #include <mutex>
 
@@ -36,7 +40,16 @@ namespace infinity_plugin
         public: void PreUpdate(const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm) override;
 
         private:
+			int simPort_{14550};
+			int autopilotPort_{14551};
+
+			std::string imuTopic_;
+			std::string autopilotAddr_;
+
+			UdpSocket autopilot_sock_;
 			gz::transport::Node node_;
+
+			void ReadSdfElements(const std::shared_ptr<const sdf::Element> &_sdf);
 
 			std::mutex imuMutex_;
 			std::mutex gpsMutex_;
@@ -60,8 +73,11 @@ namespace infinity_plugin
 			void OnMagData(gz::msgs::Magnetometer& msg);
 			//void OnLidarData();
 
+			void sendMavlinkMsg(mavlink_message_t& msg);
 
-			void ReadAndSendSensors();
+
+			void ReadAndSendSensors(uint64_t simTime);
+			void ReadAndSendGps(uint64_t simTime);
     };
 }
 

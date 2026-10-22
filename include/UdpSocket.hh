@@ -10,12 +10,18 @@ class UdpSocket
 {
 
 public:
-	UdpSocket(int local_port, const char* remote_ip, int remote_port){
+	UdpSocket(){
+		
+	};
+
+	~UdpSocket() = default;
+
+	bool init(int local_port, const char* remote_ip, int remote_port){
 		sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);	// Creazione del socket
 		if (sockfd_ < 0)
 		{
 			// logging
-			return;
+			return false;
 		}
 
 		serverAddr_.sin_family = AF_INET;
@@ -25,15 +31,15 @@ public:
 		if (bind(sockfd_, (const struct sockaddr *)&serverAddr_, sizeof(serverAddr_)) < 0)
 		{
 			// Logging
-			return;
+			return false;
 		}
 		
 		clientAddr_.sin_family = AF_INET;
 		clientAddr_.sin_port = htons(remote_port);
 		inet_pton(AF_INET, remote_ip, &clientAddr_.sin_addr);
-	};
 
-	~UdpSocket() = default;
+		return true;
+	}
 
 	int send(const uint8_t *buf, int len){
 		return sendto(sockfd_, buf, len, 0, (const struct sockaddr *)&clientAddr_, sizeof(clientAddr_));
