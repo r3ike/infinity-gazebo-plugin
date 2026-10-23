@@ -21,7 +21,7 @@ void InfinityBridge::Configure(
 	ReadSdfElements(_sdf);
 
 	// Inizializzazione socket
-	if (autopilot_sock_.init(this->simPort_, this->autopilotAddr_.c_str(), this->autopilotPort_, 10000))
+	if (autopilot_sock_.init(this->simPort_, this->autopilotAddr_.c_str(), this->autopilotPort_, 2000000))
 	{
 		std::cout << "[Infinity-bridge-plugin] UDP socket initialized correctly"<< std::endl;
 	}
@@ -118,6 +118,14 @@ void InfinityBridge::PreUpdate(
 		if (this->newImuSample_)
 		{
 			ReadAndSendSensors(simTimeUint64);
+
+			/**
+			 * LOCKSTEP
+			 * metti in pausa la simulazione (mediante la chiamata socket bloccate) e aspetti
+			 * che l'autopilot calcoli i comandi per gli attuatori.
+			 */
+
+			WaitAndApplyActuatorsCmd();
 		}
 
 		// Invia un messaggio HIL_GPS ogni nuovo messaggio gps di gazebo
@@ -125,13 +133,7 @@ void InfinityBridge::PreUpdate(
 		{
 			ReadAndSendGps(simTimeUint64);
 		}
-		
 
-		/**
-		 * LOCKSTEP
-		 * metti in pausa la simulazione (mediante la chiamata socket bloccate) e aspetti
-		 * che l'autopilot calcoli i comandi per gli attuatori.
-		 */
   	}		
 }
 
@@ -220,7 +222,25 @@ void InfinityBridge::ReadAndSendGps(uint64_t simTime){
 
 void InfinityBridge::WaitAndApplyActuatorsCmd(){
 	uint8_t rx_buffer[MAVLINK_MAX_PACKET_LEN];
-	int len = autopilot_sock_.recive(&rx_buffer, sizeof(rx_buffer));
+	int len = autopilot_sock_.recive(rx_buffer, sizeof(rx_buffer));
+	if (len > 0)
+	{
+		mavlink_message_t msg;
+        mavlink_status_t status;
+        for (int i = 0; i < len; ++i) {
+			if (mavlink_parse_char(MAVLINK_COMM_0, rx_buffer[i], &msg, &status)) {
+				if (msg.msgid == MAVLINK_MSG_ID_HIL_ACTUATOR_CONTROLS)
+				{
+					mavlink_hil_actuator_controls_t actuators_msg;
+					mavlink_msg_hil_actuator_controls_decode(&msg, &actuators_msg);
+					std::cout << "Actuator command arrived!" << std::endl;
+				}
+			}
+        }
+	}else{
+		std::cout << "[Infinity-bridge-plugin] Recive timeout" << std::endl;
+	}
+	
 }
 
 /**

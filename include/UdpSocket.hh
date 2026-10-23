@@ -14,7 +14,7 @@ public:
 		
 	};
 
-	~UdpSocket() = default;
+	~UdpSocket() {if (sockfd_ >= 0) close(sockfd_);};
 
 	bool init(int local_port, const char* remote_ip, int remote_port, uint64_t timeout_us){
 		sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);	// Creazione del socket
@@ -26,18 +26,19 @@ public:
 
 		// ---  Imposta un timeout di ricezione ---
 		struct timeval tv;
-		v.tv_sec  = static_cast<time_t>(timeout_us / 1000000ULL);
+		tv.tv_sec  = static_cast<time_t>(timeout_us / 1000000ULL);
     	tv.tv_usec = static_cast<suseconds_t>(timeout_us % 1000000ULL);
 
 		if (setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
 			// Logging dell'errore
-			// È buona norma chiudere il socket se non si riesce a impostare il timeout
 			close(sockfd_); 
 			return false;
 		}
+		memset(&serverAddr_, 0, sizeof(serverAddr_));
+		memset(&clientAddr_, 0, sizeof(clientAddr_));
 
 		serverAddr_.sin_family = AF_INET;
-		serverAddr_.sin_port = htonl(local_port);
+		serverAddr_.sin_port = htons(static_cast<uint16_t>(local_port)); 
 		serverAddr_.sin_addr.s_addr = htonl(INADDR_ANY);
 
 		if (bind(sockfd_, (const struct sockaddr *)&serverAddr_, sizeof(serverAddr_)) < 0)
