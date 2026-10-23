@@ -79,9 +79,10 @@ namespace infinity_plugin
 
 			void sendMavlinkMsg(mavlink_message_t& msg);
 
-
 			void ReadAndSendSensors(uint64_t simTime);
 			void ReadAndSendGps(uint64_t simTime);
+
+			void WaitAndApplyActuatorsCmd();
 
 			static constexpr double SEA_LEVEL_P = 101325.0;  // Pa
 			static constexpr double TEMP_K      = 288.15;    // K

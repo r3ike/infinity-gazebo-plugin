@@ -21,7 +21,7 @@ void InfinityBridge::Configure(
 	ReadSdfElements(_sdf);
 
 	// Inizializzazione socket
-	if (autopilot_sock_.init(this->simPort_, this->autopilotAddr_.c_str(),this->autopilotPort_))
+	if (autopilot_sock_.init(this->simPort_, this->autopilotAddr_.c_str(), this->autopilotPort_, 10000))
 	{
 		std::cout << "[Infinity-bridge-plugin] UDP socket initialized correctly"<< std::endl;
 	}
@@ -118,8 +118,6 @@ void InfinityBridge::PreUpdate(
 		if (this->newImuSample_)
 		{
 			ReadAndSendSensors(simTimeUint64);
-			std::cout << "[Infinity-autopilot] [] Sample letto!" << std::endl;
-			
 		}
 
 		// Invia un messaggio HIL_GPS ogni nuovo messaggio gps di gazebo
@@ -218,6 +216,11 @@ void InfinityBridge::ReadAndSendGps(uint64_t simTime){
 	//mavlink_msg_hil_gps_pack();
 
 	sendMavlinkMsg(new_msg);
+}
+
+void InfinityBridge::WaitAndApplyActuatorsCmd(){
+	uint8_t rx_buffer[MAVLINK_MAX_PACKET_LEN];
+	int len = autopilot_sock_.recive(&rx_buffer, sizeof(rx_buffer));
 }
 
 /**
