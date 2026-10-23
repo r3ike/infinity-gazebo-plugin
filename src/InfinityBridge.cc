@@ -51,6 +51,13 @@ void InfinityBridge::Configure(
 		this->node_.Subscribe(this->gpsTopic_, &InfinityBridge::OnGpsData, this);
 		std::cout << "[Infinity-bridge-plugin] Subscribed to \"" << this->gpsTopic_ << "\" topic"<< std::endl;
 	}
+
+	// set the publisher for actuator
+	if(!this->actTopic_.empty())
+	{
+		this->actuatorPub_ = this->node_.Advertise<gz::msgs::Actuators>(this->actTopic_);
+		std::cout << "[Infinity-bridge-plugin] Publisher setted on \"" << this->actTopic_ << "\" topic"<< std::endl;
+	}
 	
   	std::cout << "[Infinity-bridge-plugin] Plugin configurato con successo !"<< std::endl;
 }
@@ -98,6 +105,11 @@ void InfinityBridge::ReadSdfElements(const std::shared_ptr<const sdf::Element> &
 	{
 		std::cout << "[Infinity-bridge-plugin] gps_topic trovato" << std::endl;
 		this->gpsTopic_ = _sdf->Get<std::string>("gps_topic");
+	}
+	if (_sdf->HasElement("actuator_topic"))
+	{
+		std::cout << "[Infinity-bridge-plugin] actuator_topic trovato" << std::endl;
+		this->actTopic_ = _sdf->Get<std::string>("actuator_topic");
 	}
 }
 
@@ -211,11 +223,32 @@ void InfinityBridge::ReadAndSendSensors(uint64_t simTime)
 }
 
 void InfinityBridge::ReadAndSendGps(uint64_t simTime){
-	std::lock_guard<std::mutex> lock(this->gpsMutex_);
+	std::lock_guard<std::mutex> lock_gps(this->gpsMutex_);
 
+	int lat = static_cast<int>(this->latestGpsSample_.latitude_deg() * 1e7);	// degE7
+	int lon = static_cast<int>(this->latestGpsSample_.longitude_deg() * 1e7);	// degE7
+	int alt = static_cast<int>(this->latestGpsSample_.altitude() * 1e3);		// mm (MSL)
+
+	// Velocità in cm/s NED frame
+	int16_t vn = static_cast<int16_t>(this->latestGpsSample_.velocity_north() * 100);
+	int16_t ve = static_cast<int16_t>(this->latestGpsSample_.velocity_east() * 100);
+	int16_t vd = static_cast<int16_t>(this->latestGpsSample_.velocity_up() * -100);
+
+	uint16_t eph = 30;
+	uint16_t epv = 50;
+
+	// Ground speed and course
+	uint16_t vel = static_cast<uint16_t>(std::hypot(this->latestGpsSample_.velocity_north(), this->latestGpsSample_.velocity_east()) * 100);
+
+	double k = (std::atan2(this->latestGpsSample_.velocity_east(), this->latestGpsSample_.velocity_north()) * 100) * 180.0 / M_PI;
+	uint16_t course = static_cast<uint16_t>(k) % 36000;
 
 	mavlink_message_t new_msg;
-	//mavlink_msg_hil_gps_pack();
+	mavlink_msg_hil_gps_pack(1, MAV_COMP_ID_AUTOPILOT1, &new_msg, simTime, 3,
+		lat, lon, alt, eph, epv,
+		vel, vn, ve, vd, course, 
+		12, 0, 0
+	);
 
 	sendMavlinkMsg(new_msg);
 }
@@ -234,6 +267,14 @@ void InfinityBridge::WaitAndApplyActuatorsCmd(){
 					mavlink_hil_actuator_controls_t actuators_msg;
 					mavlink_msg_hil_actuator_controls_decode(&msg, &actuators_msg);
 					std::cout << "Actuator command arrived!" << std::endl;
+
+					gz::msgs::Actuators gz_msg;
+					for (size_t i = 0; i < 4; i++)
+					{
+						gz_msg.add_velocity(actuators_msg.controls[i] * MAX_MOTOR_VEL);
+					}
+					
+					this->actuatorPub_.Publish(gz_msg);
 				}
 			}
         }
@@ -248,21 +289,30 @@ void InfinityBridge::WaitAndApplyActuatorsCmd(){
  */
 void InfinityBridge::OnImuData(const gz::msgs::IMU &msg)
 {
-	std::lock_guard<std::mutex> lock_gps(this->imuMutex_);
+	std::lock_guard<std::mutex> lock_imu(this->imuMutex_);
     this->latestImuSample_ = msg;
     this->newImuSample_ = true;
 }
 
 void InfinityBridge::OnGpsData(const gz::msgs::NavSat &msg)
 {
+	std::lock_guard<std::mutex> lock_gps(this->gpsMutex_);
+    this->latestGpsSample_ = msg;
+    this->newGpsSample_ = true;
 }
 
 void InfinityBridge::OnBaroData(const gz::msgs::FluidPressure &msg)
 {
+	std::lock_guard<std::mutex> lock_baro(this->baroMutex_);
+    this->latestBaroSample_ = msg;
+    this->newBaroSample_ = true;
 }
 
 void InfinityBridge::OnMagData(const gz::msgs::Magnetometer &msg)
 {
+	std::lock_guard<std::mutex> lock_mag(this->magMutex_);
+    this->latestMagSample_ = msg;
+    this->newMagSample_ = true;
 }
 
 void InfinityBridge::sendMavlinkMsg(mavlink_message_t &msg)

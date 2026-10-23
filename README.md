@@ -21,6 +21,15 @@ Set the plugin in the world SDF file
 <plugin
     filename="libInfinityBridge.so"
     name="infinity_plugin::InfinityBridge">
+    
+    <sim_port>14560</sim_port>
+    <autopilot_port>14570</autopilot_port>
+    <autopilot_address>127.0.0.1</autopilot_address>
+
     <imu_topic>/imu</imu_topic>
+    <baro_topic>/air_pressure</baro_topic>
+    <mag_topic>/air_pressure</mag_topic>
+    <gps_topic>/gps</gps_topic>
+    <actuator_topic>/infinity_quadrotor/gazebo/command/motor_speed</actuator_topic>
 </plugin>
 ```

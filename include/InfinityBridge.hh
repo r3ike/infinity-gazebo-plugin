@@ -8,6 +8,7 @@
 #include <gz/msgs/navsat.pb.h>
 #include <gz/msgs/magnetometer.pb.h>
 #include <gz/msgs/fluid_pressure.pb.h>
+#include <gz/msgs/actuators.pb.h>
 
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/Sensor.hh>
@@ -41,6 +42,10 @@ namespace infinity_plugin
         public: void PreUpdate(const gz::sim::UpdateInfo &_info, gz::sim::EntityComponentManager &_ecm) override;
 
         private:
+			UdpSocket autopilot_sock_;
+			gz::transport::Node node_;
+			gz::transport::Node::Publisher actuatorPub_;
+
 			int simPort_{14550};
 			int autopilotPort_{14551};
 			std::string autopilotAddr_{"127.0.0.1"};
@@ -49,9 +54,7 @@ namespace infinity_plugin
 			std::string baroTopic_;
 			std::string magTopic_;
 			std::string gpsTopic_;
-
-			UdpSocket autopilot_sock_;
-			gz::transport::Node node_;
+			std::string actTopic_;
 
 			void ReadSdfElements(const std::shared_ptr<const sdf::Element> &_sdf);
 
@@ -89,6 +92,8 @@ namespace infinity_plugin
 			static constexpr double LAPSE       = 0.0065;    // K/m
 			static constexpr double G           = 9.80665;   // m/s^2
 			static constexpr double R_SPECIFIC  = 287.05;    // J/(kg*K)
+
+			static constexpr double MAX_MOTOR_VEL = 800.0; 		// rad/s
     };
 }
 
