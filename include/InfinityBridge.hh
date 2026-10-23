@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <mutex>
+#include <string>
 
 namespace infinity_plugin
 {
@@ -42,9 +43,12 @@ namespace infinity_plugin
         private:
 			int simPort_{14550};
 			int autopilotPort_{14551};
+			std::string autopilotAddr_{"127.0.0.1"};
 
 			std::string imuTopic_;
-			std::string autopilotAddr_;
+			std::string baroTopic_;
+			std::string magTopic_;
+			std::string gpsTopic_;
 
 			UdpSocket autopilot_sock_;
 			gz::transport::Node node_;
@@ -68,9 +72,9 @@ namespace infinity_plugin
 
 			// callback topic gz
 			void OnImuData(const gz::msgs::IMU& msg);
-			void OnGpsData(gz::msgs::NavSat& msg);
-			void OnBaroData(gz::msgs::FluidPressure& msg);
-			void OnMagData(gz::msgs::Magnetometer& msg);
+			void OnGpsData(const gz::msgs::NavSat& msg);
+			void OnBaroData(const gz::msgs::FluidPressure& msg);
+			void OnMagData(const gz::msgs::Magnetometer& msg);
 			//void OnLidarData();
 
 			void sendMavlinkMsg(mavlink_message_t& msg);
@@ -78,6 +82,12 @@ namespace infinity_plugin
 
 			void ReadAndSendSensors(uint64_t simTime);
 			void ReadAndSendGps(uint64_t simTime);
+
+			static constexpr double SEA_LEVEL_P = 101325.0;  // Pa
+			static constexpr double TEMP_K      = 288.15;    // K
+			static constexpr double LAPSE       = 0.0065;    // K/m
+			static constexpr double G           = 9.80665;   // m/s^2
+			static constexpr double R_SPECIFIC  = 287.05;    // J/(kg*K)
     };
 }
 
